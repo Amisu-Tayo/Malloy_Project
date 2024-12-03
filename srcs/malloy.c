@@ -196,20 +196,3 @@ void time_test() {
     printf("malloy time: %f seconds\n", (double)(end - start) / CLOCKS_PER_SEC);
 }
 
-int main() {
-    // Run Time Test
-    printf("Running time test:\n");
-    time_test();
-
-    // Run Fragmentation Test
-    printf("\nRunning fragmentation test:\n");
-    test_fragmentation();
-
-    // Check for leaks
-    malloy_check_leaks();
-
-    // Show memory status
-    malloy_status();
-
-    return 0;
-}

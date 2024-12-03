@@ -13,7 +13,7 @@ typedef struct MemoryBlock {
 //Memory Pool structure definition
 typedef struct MemoryPool {
     MemoryBlock* head;          // Pointer to the first block in the memory pool
-    struct memoryPool* next;    // Pointer to next memory pool
+    struct MemoryPool* next;    // Pointer to next memory pool
 } MemoryPool;
 
 // Functions 
