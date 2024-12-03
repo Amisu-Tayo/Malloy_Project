@@ -82,7 +82,7 @@ void* malloy_alloc(size_t size){
         while (current) {
             if (current->free && current->size >= size) {
                 current->free = 0;  // Mark the block as allocated
-                total_allocated += size;
+                total_allocated += current->size; //Add the size of the block being allocated
                 return (void*)(current + 1);  // Return the memory (after the metadata)
             }
             current = current->next;
@@ -99,6 +99,7 @@ void* malloy_alloc(size_t size){
 void malloy_free(void* ptr){
     if (!ptr) return;
     MemoryBlock* block = (MemoryBlock*) ptr -1; //Get metadata
+    if (block->free) return; // check if already freed
     block-> free = 1; //Mark as free 
     total_allocated -= block->size; // Update allocated memory
 
@@ -108,6 +109,7 @@ void malloy_free(void* ptr){
         MemoryBlock* current = pool->head;
         while (current && current->next) {
             if (current->free && current->next->free) {
+                // Coalesce adjacent free blocks
                 current->size += sizeof(MemoryBlock) + current->next->size;
                 current->next = current->next->next;
             } else {
