@@ -60,6 +60,7 @@ void expand_pool(){
     newPool->next = NULL;
 
     // Link the new pool to the existing pool list
+    printf("Linking new pool at %p to the pool list\n", newPool);
     MemoryPool* current = poolList;
     while (current->next) {
         current = current->next;
@@ -72,18 +73,37 @@ void expand_pool(){
 
 //Memory allocation function to aloocate or expand memory dynamically if needed
 void* malloy_alloc(size_t size){
+    printf("Requesting allocation of size: %zu bytes\n", size);
+    printf("Current total_allocated: %zu bytes\n", total_allocated);
+
     if (total_allocated + size > CHUNK_SIZE * 2) {  // Limit to 2 MB for test purposes
         printf("Warning: Memory usage exceeds threshold!\n");
     }
 
+//Iterate over memory pools
     MemoryPool* pool = poolList;
     while (pool) {
         MemoryBlock* current = pool->head;
         while (current) {
+            // Check if the block is free and large enough
+            printf("Checking block at %p, size: %zu, free: %d\n", current, current->size, current->free);
             if (current->free && current->size >= size) {
+                // If the block is larger than the requested size, split it
+                if (current->size > size + sizeof(MemoryBlock)) {
+                    // Create a new block for the remaining memory
+                    MemoryBlock* newBlock = (MemoryBlock*)((char*)(current + 1) + size);
+                    newBlock->size = current->size - size - sizeof(MemoryBlock);  // Size of the remaining block
+                    newBlock->free = 1;  // Mark the new block as free
+                    newBlock->next = current->next;  // Link it to the next block
+
+                    // Resize the current block to the requested size
+                    current->size = size;
+                    current->next = newBlock;  // Link the current block to the new block
+                }
                 current->free = 0;  // Mark the block as allocated
-                total_allocated += current->size; //Add the size of the block being allocated
-                return (void*)(current + 1);  // Return the memory (after the metadata)
+                total_allocated += size; // Update total allocate dmemory
+                printf("Allocated block at %p, size: %zu\n", (void*)(current + 1), current->size);
+                return (void*)(current + 1);  // Return the memory 
             }
             current = current->next;
         }
@@ -91,7 +111,8 @@ void* malloy_alloc(size_t size){
     }
 
     expand_pool(); // Expand the pool if no suitable block is found
-    return malloy_alloc(size);  // Retry allocation
+    //return malloy_alloc(size);  // Retry allocation
+    return 0;
     
 }
 
@@ -99,7 +120,6 @@ void* malloy_alloc(size_t size){
 void malloy_free(void* ptr){
     if (!ptr) return;
     MemoryBlock* block = (MemoryBlock*) ptr -1; //Get metadata
-    if (block->free) return; // check if already freed
     block-> free = 1; //Mark as free 
     total_allocated -= block->size; // Update allocated memory
 
@@ -108,24 +128,25 @@ void malloy_free(void* ptr){
     while (pool) {
         MemoryBlock* current = pool->head;
         while (current && current->next) {
+            // check if both current and next blocks are free
             if (current->free && current->next->free) {
-                // Coalesce adjacent free blocks
-                current->size += sizeof(MemoryBlock) + current->next->size;
-                current->next = current->next->next;
+                current->size += sizeof(MemoryBlock) + current->next->size;  //merge the two blocks
+                current->next = current->next->next;  // remove the next block from the list
             } else {
-                current = current->next;
+                current = current->next;   //if no merging occurs, move to the next block
             }
         }
         pool = pool->next;
     }
 
 }
-
 // Track the status of allocated and free memory
 void malloy_status() {
     printf("Total allocated memory: %zu bytes\n", total_allocated);
     MemoryPool* pool = poolList;
-    size_t free_memory = 0;
+    size_t free_memory = 0; //Track free memory
+
+    //Traverse all memory pools to calculate total free memory
     while (pool) {
         MemoryBlock* current = pool->head;
         while (current) {
