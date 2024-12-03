@@ -1,14 +1,14 @@
 CC = gcc
-CFLAGS = -Wall -g
+CFLAGS = -Wall -g -Iinclude
 LDFLAGS = 
 
 all: test_malloy
 
-malloy.o: src/malloy.c include/malloy.h
-	$(CC) $(CFLAGS) -c src/malloy.c -o malloy.o
+malloy.o: srcs/malloy.c include/malloy.h
+	$(CC) $(CFLAGS) -c srcs/malloy.c -o malloy.o
 
 test_malloy: malloy.o tests/test_malloy.c
-	$(CC) $(CFLAGS) tests/tests_malloy.c malloy.o -o test_malloy $(LDFLAGS)
+	$(CC) $(CFLAGS) tests/test_malloy.c malloy.o -o test_malloy $(LDFLAGS)
 
 clean:
 	rm -f *.o test_malloy
